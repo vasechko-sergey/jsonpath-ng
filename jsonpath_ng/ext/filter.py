@@ -13,10 +13,10 @@
 
 import operator
 import re
+
 from six import moves
 
-from .. import JSONPath, DatumInContext, Index
-
+from .. import DatumInContext, Index, JSONPath
 
 OPERATOR_MAP = {
     '!=': operator.ne,
@@ -30,33 +30,22 @@ OPERATOR_MAP = {
 }
 
 
-def eval_exp(expressions, val):
+def eval_exp(expressions, val) -> bool:
     for expression in expressions:
         if type(expression) == tuple and expression[0] == '|':
             val1 = eval_exp(expression[1], val)
             val2 = eval_exp(expression[2], val)
-            if val1 or val2:
-                return True
-            else:
-                return False
+            return val1 or val2
         if type(expression) == tuple and expression[0] == '&':
             val1 = eval_exp(expression[1], val)
             val2 = eval_exp(expression[2], val)
-            if val1 and val2:
-                return True
-            else:
-                return False
+            return val1 and val2
         if type(expression) == tuple and expression[0] == '!':
             val1 = eval_exp(expression[1], val)
-            if val1:
-                return False
-            else:
-                return True
+            return not val1
         else:
-            if len([expression]) == len(list(filter(lambda x: x.find(val), [expression]))):
-                return True
-            else:
-                return False
+            return len([expression]) == len(list(filter(lambda x: x.find(val), [expression])))
+
 
 class Filter(JSONPath):
     """The JSONQuery filter"""
@@ -92,7 +81,7 @@ class Filter(JSONPath):
                     else:
                         data[index] = val
         return data
-    
+
     def __repr__(self):
         return '%s(%r)' % (self.__class__.__name__, self.expressions)
 
