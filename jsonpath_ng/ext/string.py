@@ -12,8 +12,8 @@
 # under the License.
 
 import re
-from .. import DatumInContext, This
 
+from .. import DatumInContext, This
 
 SUB = re.compile("sub\(/(.*)/,\s+(.*)\)")
 SPLIT = re.compile("split\((.),\s+(\d+),\s+(\d+|-1)\)")

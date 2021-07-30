@@ -1,12 +1,7 @@
-from __future__ import (
-    print_function,
-    absolute_import,
-    division,
-    generators,
-    nested_scopes,
-)
-import sys
+from __future__ import (absolute_import, division, generators, nested_scopes, print_function)
+
 import os.path
+import sys
 
 import ply.yacc
 
@@ -37,9 +32,9 @@ class JsonPathParser(object):
             )
 
         self.debug = debug
-        self.lexer_class = lexer_class or JsonPathLexer # Crufty but works around statefulness in PLY
+        self.lexer_class = lexer_class or JsonPathLexer  # Crufty but works around statefulness in PLY
 
-    def parse(self, string, lexer = None):
+    def parse(self, string, lexer=None):
         lexer = lexer or self.lexer_class()
         return self.parse_token_stream(lexer.tokenize(string))
 
@@ -56,15 +51,17 @@ class JsonPathParser(object):
         parsing_table_module = '_'.join([module_name, start_symbol, 'parsetab'])
 
         # And we regenerate the parse table every time; it doesn't actually take that long!
-        new_parser = ply.yacc.yacc(module=self,
-                                   debug=self.debug,
-                                   tabmodule = parsing_table_module,
-                                   outputdir = output_directory,
-                                   write_tables=0,
-                                   start = start_symbol,
-                                   errorlog = logger)
+        new_parser = ply.yacc.yacc(
+            module=self,
+            debug=self.debug,
+            tabmodule=parsing_table_module,
+            outputdir=output_directory,
+            write_tables=0,
+            start=start_symbol,
+            errorlog=logger
+        )
 
-        return new_parser.parse(lexer = IteratorToTokenStream(token_iterator))
+        return new_parser.parse(lexer=IteratorToTokenStream(token_iterator))
 
     # ===================== PLY Parser specification =====================
 
@@ -78,8 +75,9 @@ class JsonPathParser(object):
     ]
 
     def p_error(self, t):
-        raise JsonPathParserError('Parse error at %s:%s near token %s (%s)'
-                                  % (t.lineno, t.col, t.value, t.type))
+        raise JsonPathParserError(
+            'Parse error at %s:%s near token %s (%s)' % (t.lineno, t.col, t.value, t.type)
+        )
 
     def p_jsonpath_binop(self, p):
         """jsonpath : jsonpath '.' jsonpath
@@ -111,8 +109,9 @@ class JsonPathParser(object):
         elif p[1] == 'parent':
             p[0] = Parent()
         else:
-            raise JsonPathParserError('Unknown named operator `%s` at %s:%s'
-                                      % (p[1], p.lineno(1), p.lexpos(1)))
+            raise JsonPathParserError(
+                'Unknown named operator `%s` at %s:%s' % (p[1], p.lineno(1), p.lexpos(1))
+            )
 
     def p_jsonpath_root(self, p):
         "jsonpath : '$'"
@@ -171,7 +170,7 @@ class JsonPathParser(object):
         "slice : '*'"
         p[0] = Slice()
 
-    def p_slice(self, p): # Currently does not support `step`
+    def p_slice(self, p):  # Currently does not support `step`
         "slice : maybe_int ':' maybe_int"
         p[0] = Slice(start=p[1], end=p[3])
 
@@ -183,6 +182,7 @@ class JsonPathParser(object):
     def p_empty(self, p):
         'empty :'
         p[0] = None
+
 
 class IteratorToTokenStream(object):
     def __init__(self, iterator):

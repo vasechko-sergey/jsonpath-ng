@@ -1,9 +1,10 @@
-from __future__ import unicode_literals, print_function, absolute_import, division, generators, nested_scopes
+from __future__ import absolute_import, division, generators, nested_scopes, print_function, unicode_literals
+
 import logging
+from itertools import *  # noqa
+
 import six
 from six.moves import xrange
-from itertools import *  # noqa
-from .exceptions import JSONPathError
 
 # Get logger name
 logger = logging.getLogger(__name__)
@@ -95,6 +96,7 @@ class DatumInContext(object):
     context within that passed in, so an object can be built from the inside
     out.
     """
+
     @classmethod
     def wrap(cls, data):
         if isinstance(data, cls):
@@ -111,7 +113,8 @@ class DatumInContext(object):
         context = DatumInContext.wrap(context)
 
         if self.context:
-            return DatumInContext(value=self.value, path=self.path, context=context.in_context(path=path, context=context))
+            return DatumInContext(value=self.value, path=self.path,
+                                  context=context.in_context(path=path, context=context))
         else:
             return DatumInContext(value=self.value, path=path, context=context)
 
@@ -126,7 +129,7 @@ class DatumInContext(object):
         """
         try:
             pseudopath = Fields(str(self.value[auto_id_field]))
-        except (TypeError, AttributeError, KeyError): # This may not be all the interesting exceptions
+        except (TypeError, AttributeError, KeyError):  # This may not be all the interesting exceptions
             pseudopath = self.path
 
         if self.context:
@@ -138,7 +141,8 @@ class DatumInContext(object):
         return '%s(value=%r, path=%r, context=%r)' % (self.__class__.__name__, self.value, self.path, self.context)
 
     def __eq__(self, other):
-        return isinstance(other, DatumInContext) and other.value == self.value and other.path == self.path and self.context == other.context
+        return isinstance(other,
+                          DatumInContext) and other.value == self.value and other.path == self.path and self.context == other.context
 
 
 class AutoIdForDatum(DatumInContext):
@@ -357,6 +361,7 @@ class Where(JSONPath):
     def __eq__(self, other):
         return isinstance(other, Where) and other.left == self.left and other.right == self.right
 
+
 class Descendants(JSONPath):
     """
     JSONPath that matches first the left expression then any descendant
@@ -386,12 +391,14 @@ class Descendants(JSONPath):
             if isinstance(datum.value, list):
                 recursive_matches = [submatch
                                      for i in range(0, len(datum.value))
-                                     for submatch in match_recursively(DatumInContext(datum.value[i], context=datum, path=Index(i)))]
+                                     for submatch in
+                                     match_recursively(DatumInContext(datum.value[i], context=datum, path=Index(i)))]
 
             elif isinstance(datum.value, dict):
                 recursive_matches = [submatch
                                      for field in datum.value.keys()
-                                     for submatch in match_recursively(DatumInContext(datum.value[field], context=datum, path=Fields(field)))]
+                                     for submatch in match_recursively(
+                        DatumInContext(datum.value[field], context=datum, path=Fields(field)))]
 
             else:
                 recursive_matches = []
@@ -480,6 +487,7 @@ class Union(JSONPath):
     WARNING: Any appearance of this being the _concatenation_ is
     coincidence. It may even be a bug! (or laziness)
     """
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -489,6 +497,7 @@ class Union(JSONPath):
 
     def find(self, data):
         return self.left.find(data) + self.right.find(data)
+
 
 class Intersect(JSONPath):
     """
@@ -501,6 +510,7 @@ class Intersect(JSONPath):
     idea is to build a filtered data and match against
     that.
     """
+
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -687,6 +697,7 @@ class Slice(JSONPath):
     an iterator, but dictionaries and other objects may also be iterable,
     so this is the compromise.
     """
+
     def __init__(self, start=None, end=None, step=None):
         self.start = start
         self.end = end
@@ -700,7 +711,8 @@ class Slice(JSONPath):
             return []
         # Here's the hack. If it is a dictionary or some kind of constant,
         # put it in a single-element list
-        if (isinstance(datum.value, dict) or isinstance(datum.value, six.integer_types) or isinstance(datum.value, six.string_types)):
+        if (isinstance(datum.value, dict) or isinstance(datum.value, six.integer_types) or isinstance(datum.value,
+                                                                                                      six.string_types)):
             return self.find(DatumInContext([datum.value], path=datum.path, context=datum.context))
 
         # Some iterators do not support slicing but we can still
@@ -708,7 +720,8 @@ class Slice(JSONPath):
         if self.start == None and self.end == None and self.step == None:
             return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in xrange(0, len(datum.value))]
         else:
-            return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in range(0, len(datum.value))[self.start:self.end:self.step]]
+            return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in
+                    range(0, len(datum.value))[self.start:self.end:self.step]]
 
     def update(self, data, val):
         for datum in self.find(data):
@@ -732,14 +745,15 @@ class Slice(JSONPath):
             return '[*]'
         else:
             return '[%s%s%s]' % (self.start or '',
-                                   ':%d'%self.end if self.end else '',
-                                   ':%d'%self.step if self.step else '')
+                                 ':%d' % self.end if self.end else '',
+                                 ':%d' % self.step if self.step else '')
 
     def __repr__(self):
         return '%s(start=%r,end=%r,step=%r)' % (self.__class__.__name__, self.start, self.end, self.step)
 
     def __eq__(self, other):
-        return isinstance(other, Slice) and other.start == self.start and self.end == other.end and other.step == self.step
+        return isinstance(other,
+                          Slice) and other.start == self.start and self.end == other.end and other.step == self.step
 
 
 def _create_list_key(dict_):

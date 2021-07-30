@@ -1,7 +1,7 @@
 import pytest
 
-from jsonpath_ng.ext.filter import Filter, Expression
 from jsonpath_ng.ext import parse
+from jsonpath_ng.ext.filter import Expression, Filter
 from jsonpath_ng.jsonpath import *
 
 
@@ -23,7 +23,7 @@ from jsonpath_ng.jsonpath import *
 
     # The third book
     ("$..book[2]",
-     Child(Descendants(Root(), Fields('book')),Index(2))),
+     Child(Descendants(Root(), Fields('book')), Index(2))),
 
     # The last book in order
     # ("$..book[(@.length-1)]",  # Not implemented

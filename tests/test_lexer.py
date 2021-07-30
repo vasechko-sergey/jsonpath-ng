@@ -1,10 +1,12 @@
-from __future__ import unicode_literals, print_function, absolute_import, division, generators, nested_scopes
+from __future__ import absolute_import, division, generators, nested_scopes, print_function, unicode_literals
+
 import logging
 import unittest
 
 from ply.lex import LexToken
 
 from jsonpath_ng.lexer import JsonPathLexer, JsonPathLexerError
+
 
 class TestLexer(unittest.TestCase):
 
@@ -19,12 +21,12 @@ class TestLexer(unittest.TestCase):
     def assert_lex_equiv(self, s, stream2):
         # NOTE: lexer fails to reset after call?
         l = JsonPathLexer(debug=True)
-        stream1 = list(l.tokenize(s)) # Save the stream for debug output when a test fails
+        stream1 = list(l.tokenize(s))  # Save the stream for debug output when a test fails
         stream2 = list(stream2)
         assert len(stream1) == len(stream2)
         for token1, token2 in zip(stream1, stream2):
             print(token1, token2)
-            assert token1.type  == token2.type
+            assert token1.type == token2.type
             assert token1.value == token2.value
 
     @classmethod
@@ -47,7 +49,9 @@ class TestLexer(unittest.TestCase):
         self.assert_lex_equiv('"fuzz.bang"', [self.token('fuzz.bang', 'ID')])
         self.assert_lex_equiv('fuzz.bang', [self.token('fuzz', 'ID'), self.token('.', '.'), self.token('bang', 'ID')])
         self.assert_lex_equiv('fuzz.*', [self.token('fuzz', 'ID'), self.token('.', '.'), self.token('*', '*')])
-        self.assert_lex_equiv('fuzz..bang', [self.token('fuzz', 'ID'), self.token('..', 'DOUBLEDOT'), self.token('bang', 'ID')])
+        self.assert_lex_equiv(
+            'fuzz..bang', [self.token('fuzz', 'ID'), self.token('..', 'DOUBLEDOT'), self.token('bang', 'ID')]
+        )
         self.assert_lex_equiv('&', [self.token('&', '&')])
         self.assert_lex_equiv('@', [self.token('@', 'ID')])
         self.assert_lex_equiv('`this`', [self.token('this', 'NAMED_OPERATOR')])

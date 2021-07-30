@@ -1,6 +1,7 @@
-from __future__ import unicode_literals, print_function, absolute_import, division, generators, nested_scopes
-import sys
+from __future__ import absolute_import, division, generators, nested_scopes, print_function, unicode_literals
+
 import logging
+import sys
 
 import ply.lex
 
@@ -17,7 +18,8 @@ class JsonPathLexer(object):
     def __init__(self, debug=False):
         self.debug = debug
         if self.__doc__ == None:
-            raise JsonPathLexerError('Docstrings have been removed! By design of PLY, jsonpath-rw requires docstrings. You must not use PYTHONOPTIMIZE=2 or python -OO.')
+            raise JsonPathLexerError(
+                'Docstrings have been removed! By design of PLY, jsonpath-rw requires docstrings. You must not use PYTHONOPTIMIZE=2 or python -OO.')
 
     def tokenize(self, string):
         '''
@@ -48,13 +50,13 @@ class JsonPathLexer(object):
 
     literals = ['*', '.', '[', ']', '(', ')', '$', ',', ':', '|', '&', '~']
 
-    reserved_words = { 'where': 'WHERE' }
+    reserved_words = {'where': 'WHERE'}
 
     tokens = ['DOUBLEDOT', 'NUMBER', 'ID', 'NAMED_OPERATOR'] + list(reserved_words.values())
 
-    states = [ ('singlequote', 'exclusive'),
-               ('doublequote', 'exclusive'),
-               ('backquote', 'exclusive') ]
+    states = [('singlequote', 'exclusive'),
+              ('doublequote', 'exclusive'),
+              ('backquote', 'exclusive')]
 
     # Normal lexing, rather easy
     t_DOUBLEDOT = r'\.\.'
@@ -70,9 +72,9 @@ class JsonPathLexer(object):
         t.value = int(t.value)
         return t
 
-
     # Single-quoted strings
     t_singlequote_ignore = ''
+
     def t_singlequote(self, t):
         r"'"
         t.lexer.string_start = t.lexer.lexpos
@@ -96,11 +98,13 @@ class JsonPathLexer(object):
         return t
 
     def t_singlequote_error(self, t):
-        raise JsonPathLexerError('Error on line %s, col %s while lexing singlequoted field: Unexpected character: %s ' % (t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
-
+        raise JsonPathLexerError(
+            'Error on line %s, col %s while lexing singlequoted field: Unexpected character: %s ' % (
+            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Double-quoted strings
     t_doublequote_ignore = ''
+
     def t_doublequote(self, t):
         r'"'
         t.lexer.string_start = t.lexer.lexpos
@@ -124,11 +128,13 @@ class JsonPathLexer(object):
         return t
 
     def t_doublequote_error(self, t):
-        raise JsonPathLexerError('Error on line %s, col %s while lexing doublequoted field: Unexpected character: %s ' % (t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
-
+        raise JsonPathLexerError(
+            'Error on line %s, col %s while lexing doublequoted field: Unexpected character: %s ' % (
+            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Back-quoted "magic" operators
     t_backquote_ignore = ''
+
     def t_backquote(self, t):
         r'`'
         t.lexer.string_start = t.lexer.lexpos
@@ -152,8 +158,9 @@ class JsonPathLexer(object):
         return t
 
     def t_backquote_error(self, t):
-        raise JsonPathLexerError('Error on line %s, col %s while lexing backquoted operator: Unexpected character: %s ' % (t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
-
+        raise JsonPathLexerError(
+            'Error on line %s, col %s while lexing backquoted operator: Unexpected character: %s ' % (
+            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Counting lines, handling errors
     def t_newline(self, t):
@@ -162,7 +169,9 @@ class JsonPathLexer(object):
         t.lexer.latest_newline = t.lexpos
 
     def t_error(self, t):
-        raise JsonPathLexerError('Error on line %s, col %s: Unexpected character: %s ' % (t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+        raise JsonPathLexerError('Error on line %s, col %s: Unexpected character: %s ' % (
+        t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+
 
 if __name__ == '__main__':
     logging.basicConfig()

@@ -6,19 +6,21 @@
 # as published by Sam Hocevar. See the COPYING file for more details.
 
 # Use modern Python
-from __future__ import unicode_literals, print_function, absolute_import
+from __future__ import absolute_import, print_function, unicode_literals
 
+import argparse
+import glob
 # Standard Library imports
 import json
 import sys
-import glob
-import argparse
 
 # JsonPath-RW imports
 from jsonpath_ng import parse
 
+
 def find_matches_for_file(expr, f):
     return expr.find(json.load(f))
+
 
 def print_matches(matches):
     print('\n'.join(['{0}'.format(match.value) for match in matches]))
@@ -47,8 +49,6 @@ def main(*argv):
             [*]             - any array index
     """)
 
-
-
     parser.add_argument('expression', help='A JSONPath expression.')
     parser.add_argument('files', metavar='file', nargs='*', help='Files to search (if none, searches stdin)')
 
@@ -66,6 +66,7 @@ def main(*argv):
             for filename in glob.glob(pattern):
                 with open(filename) as f:
                     print_matches(find_matches_for_file(expr, f))
+
 
 def entry_point():
     main(*sys.argv)

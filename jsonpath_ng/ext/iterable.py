@@ -12,7 +12,8 @@
 # under the License.
 
 import functools
-from .. import This, DatumInContext, JSONPath
+
+from .. import DatumInContext, JSONPath, This
 
 
 class SortedThis(This):
@@ -20,6 +21,7 @@ class SortedThis(This):
 
     Concrete syntax is '`sorted`' or [\\field,/field].
     """
+
     def __init__(self, expressions=None):
         self.expressions = expressions
 
@@ -79,8 +81,8 @@ class Len(JSONPath):
             return []
         else:
             return [DatumInContext(value,
-                                               context=None,
-                                               path=Len())]
+                                   context=None,
+                                   path=Len())]
 
     def __eq__(self, other):
         return isinstance(other, Len)

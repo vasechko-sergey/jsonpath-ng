@@ -11,22 +11,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from .. import lexer
-from .. import parser
-from .. import Fields, This, Child
-
-from . import arithmetic as _arithmetic
-from . import filter as _filter
-from . import iterable as _iterable
-from . import string as _string
+from . import arithmetic as _arithmetic, filter as _filter, iterable as _iterable, string as _string
+from .. import Child, Fields, This, lexer, parser
 
 
 class ExtendedJsonPathLexer(lexer.JsonPathLexer):
     """Custom LALR-lexer for JsonPath"""
     literals = lexer.JsonPathLexer.literals + ['?', '@', '+', '*', '/', '-', '!']
-    tokens = (['BOOL'] +
-              parser.JsonPathLexer.tokens +
-              ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT'])
+    tokens = (['BOOL'] + parser.JsonPathLexer.tokens + ['FILTER_OP', 'SORT_DIRECTION', 'FLOAT'])
 
     t_FILTER_OP = r'=~|==?|<=|>=|!=|<|>'
 
@@ -57,6 +49,12 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
     """Custom LALR-parser for JsonPath"""
 
     tokens = ExtendedJsonPathLexer.tokens
+    precedence = [
+                     ('left', '+', '-'),
+                     ('left', '*', '/'),
+                 ] + parser.JsonPathParser.precedence + [
+                     ('nonassoc', 'ID'),
+                 ]
 
     def __init__(self, debug=False, lexer_class=None):
         lexer_class = lexer_class or ExtendedJsonPathLexer
@@ -166,13 +164,6 @@ class ExtentedJsonPathParser(parser.JsonPathParser):
     def p_jsonpath_this(self, p):
         "jsonpath : '@'"
         p[0] = This()
-
-    precedence = [
-        ('left', '+', '-'),
-        ('left', '*', '/'),
-    ] + parser.JsonPathParser.precedence + [
-        ('nonassoc', 'ID'),
-    ]
 
 
 def parse(path, debug=False):

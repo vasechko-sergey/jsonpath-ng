@@ -12,8 +12,8 @@
 # under the License.
 
 import operator
-from .. import JSONPath, DatumInContext
 
+from .. import DatumInContext, JSONPath
 
 OPERATOR_MAP = {
     '+': operator.add,
