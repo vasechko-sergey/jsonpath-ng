@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, generators, nested_scopes, print_function, unicode_literals
-
 import logging
 import sys
 
@@ -100,7 +98,7 @@ class JsonPathLexer(object):
     def t_singlequote_error(self, t):
         raise JsonPathLexerError(
             'Error on line %s, col %s while lexing singlequoted field: Unexpected character: %s ' % (
-            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+                t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Double-quoted strings
     t_doublequote_ignore = ''
@@ -130,7 +128,7 @@ class JsonPathLexer(object):
     def t_doublequote_error(self, t):
         raise JsonPathLexerError(
             'Error on line %s, col %s while lexing doublequoted field: Unexpected character: %s ' % (
-            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+                t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Back-quoted "magic" operators
     t_backquote_ignore = ''
@@ -160,7 +158,7 @@ class JsonPathLexer(object):
     def t_backquote_error(self, t):
         raise JsonPathLexerError(
             'Error on line %s, col %s while lexing backquoted operator: Unexpected character: %s ' % (
-            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+                t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
     # Counting lines, handling errors
     def t_newline(self, t):
@@ -170,7 +168,7 @@ class JsonPathLexer(object):
 
     def t_error(self, t):
         raise JsonPathLexerError('Error on line %s, col %s: Unexpected character: %s ' % (
-        t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
+            t.lexer.lineno, t.lexpos - t.lexer.latest_newline, t.value[0]))
 
 
 if __name__ == '__main__':

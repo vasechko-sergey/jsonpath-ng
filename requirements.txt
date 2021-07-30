@@ -1,4 +1,3 @@
-ply
+ply==3.11
 decorator
-six
 setuptools>=18.5

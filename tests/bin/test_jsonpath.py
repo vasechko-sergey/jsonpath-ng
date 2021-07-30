@@ -1,21 +1,19 @@
-# Use modern Python
-from __future__ import unicode_literals, print_function, absolute_import, division, generators, nested_scopes
-
 # Standard library imports
-import unittest
-import logging
 import io
-import sys
-import os
 import json
+import logging
+import os
+import sys
+import unittest
 
 from jsonpath_ng.bin.jsonpath import main
+
 
 class TestJsonPathScript(unittest.TestCase):
     """
     Tests for the jsonpath.py command line interface.
     """
-    
+
     @classmethod
     def setup_class(cls):
         logging.basicConfig()
@@ -53,4 +51,3 @@ class TestJsonPathScript(unittest.TestCase):
         test2 = os.path.join(os.path.dirname(__file__), 'test2.json')
         main('jsonpath.py', 'foo..baz', test1, test2)
         self.assertEqual(self.output.getvalue(), '1\n2\n3\n4\n')
-

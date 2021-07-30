@@ -18,138 +18,149 @@ test_jsonpath_ng_ext
 
 Tests for `jsonpath_ng_ext` module.
 """
-
-import testscenarios
-from oslotest import base
-from six import moves
+import pytest
 
 from jsonpath_ng import jsonpath  # For setting the global auto_id_field flag
 from jsonpath_ng.ext import parser
 
 
-class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
-    scenarios = [
-        (
+def check_case(string, data, target):
+    # Note that just manually building an AST would avoid this dep and
+    # isolate the tests, but that would suck a bit
+    # Also, we coerce iterables, etc, into the desired target type
+
+    print('parse("%s").find(%s) =?= %s' % (string, data, target))
+    result = parser.parse(string).find(data)
+    if isinstance(target, list):
+        assert [r.value for r in result] == target
+    elif isinstance(target, set):
+        assert set([r.value for r in result]) == target
+    else:
+        assert result.value == target
+
+
+@pytest.mark.parametrize('name,data', [
+    (
             'sorted_list',
             dict(
                 string='objects.`sorted`',
                 data={'objects': ['alpha', 'gamma', 'beta']},
                 target=[['alpha', 'beta', 'gamma']]
             )
-        ),
-        (
+    ),
+    (
             'sorted_list_indexed',
             dict(
                 string='objects.`sorted`[1]',
                 data={'objects': ['alpha', 'gamma', 'beta']},
                 target='beta'
             )
-        ),
-        (
+    ),
+    (
             'sorted_dict',
             dict(
                 string='objects.`sorted`',
                 data={'objects': {'cow': 'moo', 'horse': 'neigh', 'cat': 'meow'}},
                 target=[['cat', 'cow', 'horse']]
             )
-        ),
-        (
+    ),
+    (
             'sorted_dict_indexed',
             dict(
                 string='objects.`sorted`[0]',
                 data={'objects': {'cow': 'moo', 'horse': 'neigh', 'cat': 'meow'}},
                 target='cat'
             )
-        ),
-        (
+    ),
+    (
             'len_list',
             dict(
                 string='objects.`len`',
                 data={'objects': ['alpha', 'gamma', 'beta']},
                 target=3
             )
-        ),
-        (
+    ),
+    (
             'len_dict',
             dict(
                 string='objects.`len`',
                 data={'objects': {'cow': 'moo', 'cat': 'neigh'}},
                 target=2
             )
-        ),
-        (
+    ),
+    (
             'len_str',
             dict(
                 string='objects[0].`len`',
                 data={'objects': ['alpha', 'gamma']},
                 target=5
             )
-        ),
-        (
+    ),
+    (
             'filter_exists_syntax1',
             dict(
                 string='objects[?cow]',
                 data={'objects': [{'cow': 'moo'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_exists_syntax2',
             dict(
                 string='objects[?@.cow]',
                 data={'objects': [{'cow': 'moo'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_exists_syntax3',
             dict(
                 string='objects[?(@.cow)]',
                 data={'objects': [{'cow': 'moo'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_exists_syntax4',
             dict(
                 string='objects[?(@."cow!?cat")]',
                 data={'objects': [{'cow!?cat': 'moo'}, {'cat': 'neigh'}]},
                 target=[{'cow!?cat': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_eq1',
             dict(
                 string='objects[?cow="moo"]',
                 data={'objects': [{'cow': 'moo'}, {'cow': 'neigh'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_eq2',
             dict(
                 string='objects[?(@.["cow"]="moo")]',
                 data={'objects': [{'cow': 'moo'}, {'cow': 'neigh'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_eq3',
             dict(
                 string='objects[?cow=="moo"]',
                 data={'objects': [{'cow': 'moo'}, {'cow': 'neigh'}, {'cat': 'neigh'}]},
                 target=[{'cow': 'moo'}]
             )
-        ),
-        (
+    ),
+    (
             'filter_gt',
             dict(
                 string='objects[?cow>5]',
                 data={'objects': [{'cow': 8}, {'cow': 7}, {'cow': 5}, {'cow': 'neigh'}]},
                 target=[{'cow': 8}, {'cow': 7}]
             )
-        ),
-        (
+    ),
+    (
             'filter_and',
             dict(
                 string='objects[?cow>5&cat=2]',
@@ -163,8 +174,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 target=[{'cow': 8, 'cat': 2},
                         {'cow': 7, 'cat': 2}]
             )
-        ),
-        (
+    ),
+    (
             'filter_or',
             dict(
                 string='objects[?cow>5|cat=2]',
@@ -180,8 +191,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                         {'cat': 2, 'cow': 2},
                         {'cat': 3, 'cow': 8}]
             )
-        ),
-        (
+    ),
+    (
             'filter_float_gt',
             dict(
                 string='objects[?confidence>=0.5].prediction',
@@ -193,8 +204,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=['Bad']
             )
-        ),
-        (
+    ),
+    (
             'sort1',
             dict(
                 string='objects[/cow]',
@@ -207,8 +218,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                          {'cat': 1, 'cow': 2},
                          {'cat': 3, 'cow': 3}]]
             )
-        ),
-        (
+    ),
+    (
             'sort1_indexed',
             dict(
                 string='objects[/cow][0].cat',
@@ -219,24 +230,24 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=2
             )
-        ),
-        (
+    ),
+    (
             'sort2',
             dict(
                 string='objects[\cat]',
                 data={'objects': [{'cat': 2}, {'cat': 1}, {'cat': 3}]},
                 target=[[{'cat': 3}, {'cat': 2}, {'cat': 1}]]
             )
-        ),
-        (
+    ),
+    (
             'sort2_indexed',
             dict(
                 string='objects[\cat][-1].cat',
                 data={'objects': [{'cat': 2}, {'cat': 1}, {'cat': 3}]},
                 target=1
             )
-        ),
-        (
+    ),
+    (
             'sort3',
             dict(
                 string='objects[/cow,\cat]',
@@ -251,8 +262,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                          {'cat': 1, 'cow': 2},
                          {'cat': 3, 'cow': 3}]]
             )
-        ),
-        (
+    ),
+    (
             'sort3_indexed',
             dict(
                 string='objects[/cow,\cat][0].cat',
@@ -264,8 +275,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=3
             )
-        ),
-        (
+    ),
+    (
             'sort4',
             dict(
                 string='objects[/cat.cow]',
@@ -278,8 +289,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                          {'cat': {'dog': 1, 'cow': 2}},
                          {'cat': {'dog': 3, 'cow': 3}}]]
             )
-        ),
-        (
+    ),
+    (
             'sort4_indexed',
             dict(
                 string='objects[/cat.cow][0].cat.dog',
@@ -290,8 +301,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=2
             )
-        ),
-        (
+    ),
+    (
             'sort5_twofields',
             dict(string='objects[/cat.(cow,bow)]',
                  data={
@@ -306,8 +317,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                           {'cat': {'dog': 3, 'cow': 2}},
                           {'cat': {'dog': 1, 'bow': 3}}]]
                  )
-        ),
-        (
+    ),
+    (
             'sort5_indexed',
             dict(
                 string='objects[/cat.(cow,bow)][0].cat.dog',
@@ -320,61 +331,61 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=2
             )
-        ),
-        (
+    ),
+    (
             'arithmetic_number_only',
             dict(string='3 * 3', data={}, target=[9])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul1',
             dict(string='$.foo * 10', data={'foo': 4}, target=[40])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul2',
             dict(string='10 * $.foo', data={'foo': 4}, target=[40])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul3',
             dict(string='$.foo * 10', data={'foo': 4}, target=[40])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul4',
             dict(string='$.foo * 3', data={'foo': 'f'}, target=['fff'])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul5',
             dict(string='foo * 3', data={'foo': 'f'}, target=['foofoofoo'])
-        ),
-        (
+    ),
+    (
             'arithmetic_mul6',
             dict(string='($.foo * 10 * $.foo) + 2', data={'foo': 4}, target=[162])),
-        (
+    (
             'arithmetic_mul7',
             dict(string='$.foo * 10 * $.foo + 2', data={'foo': 4}, target=[240])
-        ),
-        (
+    ),
+    (
             'arithmetic_str0',
             dict(string='foo + bar', data={'foo': 'name', "bar": "node"}, target=["foobar"])
-        ),
-        (
+    ),
+    (
             'arithmetic_str1',
             dict(string='foo + "_" + bar',
                  data={'foo': 'name', "bar": "node"},
                  target=["foo_bar"])
-        ),
-        (
+    ),
+    (
             'arithmetic_str2',
             dict(string='$.foo + "_" + $.bar',
                  data={'foo': 'name', "bar": "node"},
                  target=["name_node"])
-        ),
-        (
+    ),
+    (
             'arithmetic_str3',
             dict(string='$.foo + $.bar',
                  data={'foo': 'name', "bar": "node"},
                  target=["namenode"])
-        ),
-        (
+    ),
+    (
             'arithmetic_str4',
             dict(string='foo.cow + bar.cow',
                  data={
@@ -382,8 +393,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                      "bar": {'cow': "node"}
                  },
                  target=["namenode"])
-        ),
-        (
+    ),
+    (
             'arithmetic_list1',
             dict(string='$.objects[*].cow * 2',
                  data={
@@ -392,8 +403,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                                  {'cow': 3}]
                  },
                  target=[2, 4, 6])
-        ),
-        (
+    ),
+    (
             'arithmetic_list2',
             dict(string='$.objects[*].cow * $.objects[*].cow',
                  data={
@@ -402,8 +413,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                                  {'cow': 3}]
                  },
                  target=[1, 4, 9]))
-        ,
-        (
+    ,
+    (
             'arithmetic_list_err1',
             dict(
                 string='$.objects[*].cow * $.objects2[*].cow',
@@ -412,17 +423,17 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                     'objects2': [{'cow': 5}]
                 },
                 target=[])
-        ),
-        (
+    ),
+    (
             'arithmetic_err1',
             dict(string='$.objects * "foo"',
                  data={'objects': []}, target=[])
-        ),
-        (
+    ),
+    (
             'arithmetic_err2',
             dict(string='"bar" * "foo"', data={}, target=[])
-        ),
-        (
+    ),
+    (
             'real_life_example1',
             dict(
                 string="payload.metrics[?(@.name='cpu.frequency')].value * 100",
@@ -444,14 +455,15 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                     }
                 },
                 target=[160000])
-        ),
-        ('real_life_example2',
-         dict(
-             string="payload.(id|(resource.id))",
-             data={'payload': {'id': 'foobar'}},
-             target=['foobar'])
-         ),
-        (
+    ),
+    (
+            'real_life_example2',
+            dict(
+                string="payload.(id|(resource.id))",
+                data={'payload': {'id': 'foobar'}},
+                target=['foobar'])
+    ),
+    (
             'real_life_example3',
             dict(
                 string="payload.id|(resource.id)",
@@ -462,8 +474,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                     }
                 },
                 target=['foobar'])
-        ),
-        (
+    ),
+    (
             'real_life_example4',
             dict(
                 string="payload.id|(resource.id)",
@@ -474,64 +486,64 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                     }
                 },
                 target=['yes', 'foobar'])
-        ),
-        (
+    ),
+    (
             'sub1',
             dict(
                 string="payload.`sub(/(foo\\\\d+)\\\\+(\\\\d+bar)/, \\\\2-\\\\1)`",
                 data={'payload': "foo5+3bar"},
                 target=["3bar-foo5"]
             )
-        ),
-        (
+    ),
+    (
             'sub2',
             dict(
                 string='payload.`sub(/foo\\\\+bar/, repl)`',
                 data={'payload': "foo+bar"},
                 target=["repl"]
             )
-        ),
-        (
+    ),
+    (
             'str1',
             dict(
                 string='payload.`str()`',
                 data={'payload': 1},
                 target=["1"]
             )
-        ),
-        (
+    ),
+    (
             'split1',
             dict(
                 string='payload.`split(-, 2, -1)`',
                 data={'payload': "foo-bar-cat-bow"},
                 target=["cat"]
             )
-        ),
-        (
+    ),
+    (
             'split2',
             dict(
                 string='payload.`split(-, 2, 2)`',
                 data={'payload': "foo-bar-cat-bow"},
                 target=["cat-bow"]
             )
-        ),
-        (
+    ),
+    (
             'bug-#2-correct',
             dict(
                 string='foo[?(@.baz==1)]',
                 data={'foo': [{'baz': 1}, {'baz': 2}]},
                 target=[{'baz': 1}],
             )
-        ),
-        (
+    ),
+    (
             'bug-#2-wrong',
             dict(
                 string='foo[*][?(@.baz==1)]',
                 data={'foo': [{'baz': 1}, {'baz': 2}]},
                 target=[],
             )
-        ),
-        (
+    ),
+    (
             'boolean-filter-true',
             dict(
                 string='foo[?flag = true].color',
@@ -541,8 +553,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=['blue']
             )
-        ),
-        (
+    ),
+    (
             'boolean-filter-false',
             dict(
                 string='foo[?flag = false].color',
@@ -552,8 +564,8 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=['green']
             )
-        ),
-        (
+    ),
+    (
             'boolean-filter-other-datatypes-involved',
             dict(
                 string='foo[?flag = true].color',
@@ -564,262 +576,195 @@ class Testjsonpath_ng_ext(testscenarios.WithScenarios, base.BaseTestCase):
                 },
                 target=['blue']
             )
-        ),
-        (
+    ),
+    (
             'boolean-filter-string-true-string-literal',
             dict(
                 string='foo[?flag = "true"].color',
                 data={'foo': [{"color": "blue", "flag": True}, {"color": "green", "flag": "true"}]},
                 target=['green']
             )
-        ),
-    ]
-
-    def test_fields_value(self):
-        jsonpath.auto_id_field = None
-        result = parser.parse(self.string, debug=True).find(self.data)
-        if isinstance(self.target, list):
-            self.assertEqual(self.target, [r.value for r in result])
-        elif isinstance(self.target, set):
-            self.assertEqual(self.target, set([r.value for r in result]))
-        elif isinstance(self.target, (int, float)):
-            self.assertEqual(self.target, result[0].value)
-        else:
-            self.assertEqual(self.target, result[0].value)
+    ),
+])
+def test_fields_value(name, data):
+    jsonpath.auto_id_field = None
+    string, data, target = data.values()
+    result = parser.parse(string, debug=True).find(data)
+    if isinstance(target, list):
+        assert target == [r.value for r in result]
+    elif isinstance(target, set):
+        assert target == set([r.value for r in result])
+    elif isinstance(target, (int, float)):
+        assert target == result[0].value
+    else:
+        assert target == result[0].value
 
 
 # NOTE(sileht): copy of tests/test_jsonpath.py
 # to ensure we didn't break jsonpath_ng
 
 
-class TestJsonPath(base.BaseTestCase):
-    """Tests of the actual jsonpath functionality """
+@pytest.mark.parametrize('string,data,target', [
+    ('foo', {'foo': 'baz'}, ['baz']),
+    ('foo,baz', {'foo': 1, 'baz': 2}, [1, 2]),
+    ('@foo', {'@foo': 1}, [1]),
+    ('*', {'foo': 1, 'baz': 2}, set([1, 2])),
+])
+def test_fields_cases(string, data, target):
+    jsonpath.auto_id_field = None
+    check_case(string, data, target)
 
-    #
-    # Check that the data value returned is good
-    #
-    def check_cases(self, test_cases):
-        # Note that just manually building an AST would avoid this dep and
-        # isolate the tests, but that would suck a bit
-        # Also, we coerce iterables, etc, into the desired target type
 
-        for string, data, target in test_cases:
-            print('parse("%s").find(%s) =?= %s' % (string, data, target))
-            result = parser.parse(string).find(data)
-            if isinstance(target, list):
-                assert [r.value for r in result] == target
-            elif isinstance(target, set):
-                assert set([r.value for r in result]) == target
-            else:
-                assert result.value == target
+@pytest.mark.parametrize('string,data,target', [
+    ('foo.id', {'foo': 'baz'}, ['foo']),
+    ('foo.id', {'foo': {'id': 'baz'}}, ['baz']),
+    ('foo,baz.id', {'foo': 1, 'baz': 2}, ['foo', 'baz']),
+    ('*.id', {'foo': {'id': 1}, 'baz': 2}, set(['1', 'baz'])),
+    ('*', {'foo': 1, 'baz': 2}, set([1, 2, '`this`']))
+])
+def test_fields_cases_id(string, data, target):
+    jsonpath.auto_id_field = "id"
+    check_case(string, data, target)
 
-    def test_fields_value(self):
-        jsonpath.auto_id_field = None
-        self.check_cases([('foo', {'foo': 'baz'}, ['baz']),
-                          ('foo,baz', {'foo': 1, 'baz': 2}, [1, 2]),
-                          ('@foo', {'@foo': 1}, [1]),
-                          ('*', {'foo': 1, 'baz': 2}, set([1, 2]))])
 
-        jsonpath.auto_id_field = 'id'
-        self.check_cases([('*', {'foo': 1, 'baz': 2}, set([1, 2, '`this`']))])
+@pytest.mark.parametrize('string,data,target', [
+    ('$', {'foo': 'baz'}, [{'foo': 'baz'}]),
+    ('foo.$', {'foo': 'baz'}, [{'foo': 'baz'}]),
+    ('foo.$.foo', {'foo': 'baz'}, ['baz']),
+])
+def test_root_value(string, data, target):
+    jsonpath.auto_id_field = None
+    check_case(string, data, target)
 
-    def test_root_value(self):
-        jsonpath.auto_id_field = None
-        self.check_cases([
-            ('$', {'foo': 'baz'}, [{'foo': 'baz'}]),
-            ('foo.$', {'foo': 'baz'}, [{'foo': 'baz'}]),
-            ('foo.$.foo', {'foo': 'baz'}, ['baz']),
-        ])
 
-    def test_this_value(self):
-        jsonpath.auto_id_field = None
-        self.check_cases([
-            ('`this`', {'foo': 'baz'}, [{'foo': 'baz'}]),
-            ('foo.`this`', {'foo': 'baz'}, ['baz']),
-            ('foo.`this`.baz', {'foo': {'baz': 3}}, [3]),
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('$.id', {'foo': 'baz'}, ['$']),  # This is a wonky case that is
+    # not that interesting
+    ('foo.$.id', {'foo': 'baz', 'id': 'bizzle'}, ['bizzle']),
+    ('foo.$.baz.id', {'foo': 4, 'baz': 3}, ['baz']),
+])
+def test_root_value_id(string, data, target):
+    jsonpath.auto_id_field = 'id'
+    check_case(string, data, target)
 
-    def test_index_value(self):
-        self.check_cases([
-            ('[0]', [42], [42]),
-            ('[5]', [42], []),
-            ('[2]', [34, 65, 29, 59], [29])
-        ])
 
-    def test_slice_value(self):
-        self.check_cases([('[*]', [1, 2, 3], [1, 2, 3]),
-                          ('[*]', moves.range(1, 4), [1, 2, 3]),
-                          ('[1:]', [1, 2, 3, 4], [2, 3, 4]),
-                          ('[:2]', [1, 2, 3, 4], [1, 2])])
+@pytest.mark.parametrize('string,data,target', [
+    ('`this`', {'foo': 'baz'}, [{'foo': 'baz'}]),
+    ('foo.`this`', {'foo': 'baz'}, ['baz']),
+    ('foo.`this`.baz', {'foo': {'baz': 3}}, [3]),
+])
+def test_this_value(string, data, target):
+    jsonpath.auto_id_field = None
+    check_case(string, data, target)
 
-        # Funky slice hacks
-        self.check_cases([
-            ('[*]', 1, [1]),  # This is a funky hack
-            ('[0:]', 1, [1]),  # This is a funky hack
-            ('[*]', {'foo': 1}, [{'foo': 1}]),  # This is a funky hack
-            ('[*].foo', {'foo': 1}, [1]),  # This is a funky hack
-        ])
 
-    def test_child_value(self):
-        self.check_cases([('foo.baz', {'foo': {'baz': 3}}, [3]),
-                          ('foo.baz', {'foo': {'baz': [3]}}, [[3]]),
-                          ('foo.baz.bizzle', {'foo': {'baz': {'bizzle': 5}}},
-                           [5])])
+@pytest.mark.parametrize('string,data,target', [
+    ('id', {'foo': 'baz'}, ['`this`']),  # This is, again, a wonky case
+    # that is not that interesting
+    ('foo.`this`.id', {'foo': 'baz'}, ['foo']),
+    ('foo.`this`.baz.id', {'foo': {'baz': 3}}, ['foo.baz']),
+])
+def test_this_auto_id(string, data, target):
+    jsonpath.auto_id_field = 'id'
+    check_case(string, data, target)
 
-    def test_descendants_value(self):
-        self.check_cases([
-            ('foo..baz', {'foo': {'baz': 1, 'bing': {'baz': 2}}}, [1, 2]),
-            ('foo..baz', {'foo': [{'baz': 1}, {'baz': 2}]}, [1, 2]),
-        ])
 
-    def test_parent_value(self):
-        self.check_cases([('foo.baz.`parent`', {'foo': {'baz': 3}},
-                           [{'baz': 3}]),
-                          ('foo.`parent`.foo.baz.`parent`.baz.bizzle',
-                           {'foo': {'baz': {'bizzle': 5}}}, [5])])
+@pytest.mark.parametrize('string,data,target', [
+    ('[0]', [42], [42]),
+    ('[5]', [42], []),
+    ('[2]', [34, 65, 29, 59], [29])
+])
+def test_index_value(string, data, target):
+    check_case(string, data, target)
 
-    def test_hyphen_key(self):
-        # NOTE(sileht): hyphen is now a operator
-        # so to use it has key we must escape it with quote
-        # self.check_cases([('foo.bar-baz', {'foo': {'bar-baz': 3}}, [3]),
-        #                  ('foo.[bar-baz,blah-blah]',
-        #                   {'foo': {'bar-baz': 3, 'blah-blah': 5}},
-        #                   [3, 5])])
-        self.check_cases([('foo."bar-baz"', {'foo': {'bar-baz': 3}}, [3]),
-                          ('foo.["bar-baz","blah-blah"]',
-                           {'foo': {'bar-baz': 3, 'blah-blah': 5}},
-                           [3, 5])])
-        # self.assertRaises(lexer.JsonPathLexerError, self.check_cases,
-        #                  [('foo.-baz', {'foo': {'-baz': 8}}, [8])])
 
-    #
-    # Check that the paths for the data are correct.
-    # FIXME: merge these tests with the above, since the inputs are the same
-    # anyhow
-    #
-    def check_paths(self, test_cases):
-        # Note that just manually building an AST would avoid this dep and
-        # isolate the tests, but that would suck a bit
-        # Also, we coerce iterables, etc, into the desired target type
+@pytest.mark.parametrize('string,data,target', [
+    ('[0].id', [42], ['[0]']),
+    ('[2].id', [34, 65, 29, 59], ['[2]'])
+])
+def test_index_value_id(string, data, target):
+    jsonpath.auto_id_field = "id"
+    check_case(string, data, target)
 
-        for string, data, target in test_cases:
-            print('parse("%s").find(%s).paths =?= %s' % (string, data, target))
-            result = parser.parse(string).find(data)
-            if isinstance(target, list):
-                assert [str(r.full_path) for r in result] == target
-            elif isinstance(target, set):
-                assert set([str(r.full_path) for r in result]) == target
-            else:
-                assert str(result.path) == target
 
-    def test_fields_paths(self):
-        jsonpath.auto_id_field = None
-        self.check_paths([
-            ('foo', {'foo': 'baz'}, ['foo']),
-            ('foo,baz', {'foo': 1, 'baz': 2}, ['foo', 'baz']),
-            ('*', {'foo': 1, 'baz': 2}, set(['foo', 'baz']))
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('[*]', [1, 2, 3], [1, 2, 3]),
+    ('[*]', range(1, 4), [1, 2, 3]),
+    ('[1:]', [1, 2, 3, 4], [2, 3, 4]),
+    ('[:2]', [1, 2, 3, 4], [1, 2]),
+    ('[*]', 1, [1]),  # This is a funky hack
+    ('[0:]', 1, [1]),  # This is a funky hack
+    ('[*]', {'foo': 1}, [{'foo': 1}]),  # This is a funky hack
+    ('[*].foo', {'foo': 1}, [1]),  # This is a funky hack
+])
+def test_slice_value(string, data, target):
+    check_case(string, data, target)
 
-        jsonpath.auto_id_field = 'id'
-        self.check_paths([('*', {'foo': 1, 'baz': 2}, set(['foo', 'baz', 'id']))])
 
-    def test_root_paths(self):
-        jsonpath.auto_id_field = None
-        self.check_paths([
-            ('$', {'foo': 'baz'}, ['$']),
-            ('foo.$', {'foo': 'baz'}, ['$']),
-            ('foo.$.foo', {'foo': 'baz'}, ['foo']),
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('[*].id', [1, 2, 3], ['[0]', '[1]', '[2]']),
+    ('[1:].id', [1, 2, 3, 4], ['[1]', '[2]', '[3]'])
+])
+def test_slice_value_id(string, data, target):
+    jsonpath.auto_id_field = "id"
+    check_case(string, data, target)
 
-    def test_this_paths(self):
-        jsonpath.auto_id_field = None
-        self.check_paths([
-            ('`this`', {'foo': 'baz'}, ['`this`']),
-            ('foo.`this`', {'foo': 'baz'}, ['foo']),
-            ('foo.`this`.baz', {'foo': {'baz': 3}}, ['foo.baz']),
-        ])
 
-    def test_index_paths(self):
-        self.check_paths([
-            ('[0]', [42], ['[0]']),
-            ('[2]', [34, 65, 29, 59], ['[2]'])
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo.baz', {'foo': {'baz': 3}}, [3]),
+    ('foo.baz', {'foo': {'baz': [3]}}, [[3]]),
+    ('foo.baz.bizzle', {'foo': {'baz': {'bizzle': 5}}}, [5])
+])
+def test_child_value(string, data, target):
+    jsonpath.auto_id_field = None
+    check_case(string, data, target)
 
-    def test_slice_paths(self):
-        self.check_paths([
-            ('[*]', [1, 2, 3], ['[0]', '[1]', '[2]']),
-            ('[1:]', [1, 2, 3, 4], ['[1]', '[2]', '[3]'])
-        ])
 
-    def test_child_paths(self):
-        self.check_paths([
-            ('foo.baz', {'foo': {'baz': 3}}, ['foo.baz']),
-            ('foo.baz', {'foo': {'baz': [3]}}, ['foo.baz']),
-            ('foo.baz.bizzle', {'foo': {'baz': {'bizzle': 5}}},
-             ['foo.baz.bizzle'])
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo.baz.id', {'foo': {'baz': 3}}, ['foo.baz']),
+    ('foo.baz.id', {'foo': {'baz': [3]}}, ['foo.baz']),
+    ('foo.baz.id', {'foo': {'id': 'bizzle', 'baz': 3}}, ['bizzle.baz']),
+    ('foo.baz.id', {'foo': {'baz': {'id': 'hi'}}}, ['foo.hi']),
+    ('foo.baz.bizzle.id', {'foo': {'baz': {'bizzle': 5}}}, ['foo.baz.bizzle'])
+])
+def test_child_value_id(string, data, target):
+    jsonpath.auto_id_field = "id"
+    check_case(string, data, target)
 
-    def test_descendants_paths(self):
-        self.check_paths([
-            ('foo..baz', {'foo': {'baz': 1, 'bing': {'baz': 2}}}, ['foo.baz', 'foo.bing.baz'])
-        ])
 
-    #
-    # Check the "auto_id_field" feature
-    #
-    def test_fields_auto_id(self):
-        jsonpath.auto_id_field = "id"
-        self.check_cases([
-            ('foo.id', {'foo': 'baz'}, ['foo']),
-            ('foo.id', {'foo': {'id': 'baz'}}, ['baz']),
-            ('foo,baz.id', {'foo': 1, 'baz': 2}, ['foo', 'baz']),
-            ('*.id', {'foo': {'id': 1}, 'baz': 2}, set(['1', 'baz']))
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo..baz', {'foo': {'baz': 1, 'bing': {'baz': 2}}}, [1, 2]),
+    ('foo..baz', {'foo': [{'baz': 1}, {'baz': 2}]}, [1, 2]),
+])
+def test_descendants_value(string, data, target):
+    check_case(string, data, target)
 
-    def test_root_auto_id(self):
-        jsonpath.auto_id_field = 'id'
-        self.check_cases([
-            ('$.id', {'foo': 'baz'}, ['$']),  # This is a wonky case that is
-            # not that interesting
-            ('foo.$.id', {'foo': 'baz', 'id': 'bizzle'}, ['bizzle']),
-            ('foo.$.baz.id', {'foo': 4, 'baz': 3}, ['baz']),
-        ])
 
-    def test_this_auto_id(self):
-        jsonpath.auto_id_field = 'id'
-        self.check_cases([
-            ('id', {'foo': 'baz'}, ['`this`']),  # This is, again, a wonky case
-            # that is not that interesting
-            ('foo.`this`.id', {'foo': 'baz'}, ['foo']),
-            ('foo.`this`.baz.id', {'foo': {'baz': 3}}, ['foo.baz']),
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo..baz.id', {'foo': {'baz': 1, 'bing': {'baz': 2}}}, ['foo.baz', 'foo.bing.baz'])
+])
+def test_descendants_value_id(string, data, target):
+    jsonpath.auto_id_field = "id"
+    check_case(string, data, target)
 
-    def test_index_auto_id(self):
-        jsonpath.auto_id_field = "id"
-        self.check_cases([
-            ('[0].id', [42], ['[0]']),
-            ('[2].id', [34, 65, 29, 59], ['[2]'])
-        ])
 
-    def test_slice_auto_id(self):
-        jsonpath.auto_id_field = "id"
-        self.check_cases([
-            ('[*].id', [1, 2, 3], ['[0]', '[1]', '[2]']),
-            ('[1:].id', [1, 2, 3, 4], ['[1]', '[2]', '[3]'])
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo.baz.`parent`', {'foo': {'baz': 3}}, [{'baz': 3}]),
+    ('foo.`parent`.foo.baz.`parent`.baz.bizzle', {'foo': {'baz': {'bizzle': 5}}}, [5])
+])
+def test_parent_value(string, data, target):
+    check_case(string, data, target)
 
-    def test_child_auto_id(self):
-        jsonpath.auto_id_field = "id"
-        self.check_cases([
-            ('foo.baz.id', {'foo': {'baz': 3}}, ['foo.baz']),
-            ('foo.baz.id', {'foo': {'baz': [3]}}, ['foo.baz']),
-            ('foo.baz.id', {'foo': {'id': 'bizzle', 'baz': 3}}, ['bizzle.baz']),
-            ('foo.baz.id', {'foo': {'baz': {'id': 'hi'}}}, ['foo.hi']),
-            ('foo.baz.bizzle.id', {'foo': {'baz': {'bizzle': 5}}}, ['foo.baz.bizzle'])
-        ])
 
-    def test_descendants_auto_id(self):
-        jsonpath.auto_id_field = "id"
-        self.check_cases([
-            ('foo..baz.id', {'foo': {'baz': 1, 'bing': {'baz': 2}}}, ['foo.baz', 'foo.bing.baz'])
-        ])
+@pytest.mark.parametrize('string,data,target', [
+    ('foo."bar-baz"', {'foo': {'bar-baz': 3}}, [3]),
+    ('foo.["bar-baz","blah-blah"]', {'foo': {'bar-baz': 3, 'blah-blah': 5}}, [3, 5])
+])
+def test_hyphen_key(string, data, target):
+    # NOTE(sileht): hyphen is now a operator
+    # so to use it has key we must escape it with quote
+    # self.check_cases([('foo.bar-baz', {'foo': {'bar-baz': 3}}, [3]),
+    #                  ('foo.[bar-baz,blah-blah]',
+    #                   {'foo': {'bar-baz': 3, 'blah-blah': 5}},
+    #                   [3, 5])])
+    check_case(string, data, target)

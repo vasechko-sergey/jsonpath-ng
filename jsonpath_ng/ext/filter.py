@@ -14,8 +14,6 @@
 import operator
 import re
 
-from six import moves
-
 from .. import DatumInContext, Index, JSONPath
 
 OPERATOR_MAP = {
@@ -66,7 +64,7 @@ class Filter(JSONPath):
             return []
 
         res = []
-        for i in moves.range(0, len(datum.value)):
+        for i in range(0, len(datum.value)):
             if eval_exp(self.expressions, datum.value[i]):
                 res.append(DatumInContext(datum.value[i], path=Index(i), context=datum))
         return res

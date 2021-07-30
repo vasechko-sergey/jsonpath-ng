@@ -1,10 +1,5 @@
-from __future__ import absolute_import, division, generators, nested_scopes, print_function, unicode_literals
-
 import logging
 from itertools import *  # noqa
-
-import six
-from six.moves import xrange
 
 # Get logger name
 logger = logging.getLogger(__name__)
@@ -711,14 +706,13 @@ class Slice(JSONPath):
             return []
         # Here's the hack. If it is a dictionary or some kind of constant,
         # put it in a single-element list
-        if (isinstance(datum.value, dict) or isinstance(datum.value, six.integer_types) or isinstance(datum.value,
-                                                                                                      six.string_types)):
+        if isinstance(datum.value, dict) or isinstance(datum.value, int) or isinstance(datum.value, str):
             return self.find(DatumInContext([datum.value], path=datum.path, context=datum.context))
 
         # Some iterators do not support slicing but we can still
         # at least work for '*'
-        if self.start == None and self.end == None and self.step == None:
-            return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in xrange(0, len(datum.value))]
+        if self.start is None and self.end is None and self.step is None:
+            return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in range(0, len(datum.value))]
         else:
             return [DatumInContext(datum.value[i], path=Index(i), context=datum) for i in
                     range(0, len(datum.value))[self.start:self.end:self.step]]
